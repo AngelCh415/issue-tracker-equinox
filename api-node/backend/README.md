@@ -40,7 +40,7 @@ npm start
 npm test
 ```
 
-## Endpoints sugeridos
+## Endpoints implementados
 
 - `POST /api/auth/login` - Login mock
 - `GET /api/projects` - Listar proyectos
