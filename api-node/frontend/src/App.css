@@ -1,0 +1,137 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #646cff 0%, #61dafb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: #888;
+  font-size: 1.1rem;
+}
+
+.libraries {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.library-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #646cff;
+  border-bottom: 2px solid #646cff;
+  padding-bottom: 0.5rem;
+}
+
+.library-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.library-card {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.library-card:hover {
+  border-color: #646cff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.15);
+}
+
+.library-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.install-command {
+  display: block;
+  background: #0d0d0d;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #61dafb;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.docs-link {
+  color: #646cff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-block;
+  margin-top: 0.5rem;
+  transition: color 0.2s;
+}
+
+.docs-link:hover {
+  color: #61dafb;
+  text-decoration: underline;
+}
+
+.footer {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid #333;
+}
+
+.instructions {
+  background: #1a1a1a;
+  border-left: 4px solid #646cff;
+  padding: 1.5rem;
+  border-radius: 4px;
+}
+
+.instructions h3 {
+  margin-top: 0;
+  color: #646cff;
+}
+
+.instructions ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+}
+
+.instructions li {
+  padding: 0.5rem 0;
+  color: #ccc;
+}
+
+.instructions code {
+  background: #0d0d0d;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  color: #61dafb;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .library-items {
+    grid-template-columns: 1fr;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+  }
+}
