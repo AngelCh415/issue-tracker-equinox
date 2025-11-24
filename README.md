@@ -48,7 +48,6 @@ El objetivo es contar con:
 │
 ├── classifier/
 │   ├── main.py
-│   └── requirements.txt (opcional)
 │
 ├── frontend/        # (por implementar / en progreso)
 │
