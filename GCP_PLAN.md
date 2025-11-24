@@ -1,6 +1,5 @@
 
 ---
-```markdown
 # Plan de despliegue en GCP – Issue Tracker
 
 Este documento describe un plan teórico de despliegue de la aplicación Issue Tracker en Google Cloud Platform (GCP), contemplando backend, microservicio de clasificación y frontend.
