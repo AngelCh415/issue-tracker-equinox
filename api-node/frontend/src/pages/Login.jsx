@@ -13,7 +13,7 @@ export default function Login() {
         try {
             const response = await apiClient.post("/auth/login", { email, password });
             console.log("Login successful:", response.data);
-            navigate("/dashboard");
+            navigate("/projects");
         } catch (error) {
             console.error("Login failed:", error);
         }
