@@ -54,3 +54,12 @@ El objetivo es contar con:
 ├── README.md
 ├── ARCHITECTURE.md
 └── GCP_PLAN.md
+```
+
+```markdown
+## 🚀 Cómo ejecutar
+
+Las instrucciones detalladas de ejecución están en:
+- `backend/README.md` para el API principal.
+- `classifier/README.md` para el servicio de clasificación.
+- `frontend/README.md` para el cliente web (cuando esté completo).
