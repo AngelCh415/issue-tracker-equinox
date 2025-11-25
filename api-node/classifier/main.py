@@ -16,7 +16,7 @@ def classify(issue: Issue):
         tags.append("security")
     if any(word in text for word in ["ui", "button", "layout"]):
         tags.append("frontend")
-    if any(word in text for word in ["db", "sql", "query"]):
+    if any(word in text for word in ["base de datos", "sql", "query"]):
         tags.append("database")
     if not tags:
         tags.append("general")
