@@ -13,24 +13,13 @@
   ],
   "issues": [
     {
-      "id": 1,
+      "id": 3,
       "projectId": 1,
-      "title": "Login error on /auth",
-      "description": "User cannot login with correct credentials",
+      "title": "Error en el login",
+      "description": "Fallo al logearse",
       "status": "open",
       "tags": [
-        "bug",
-        "auth"
-      ]
-    },
-    {
-      "id": 2,
-      "projectId": 1,
-      "title": "aa",
-      "description": "desde frontend",
-      "status": "open",
-      "tags": [
-        "general"
+        "security"
       ]
     }
   ]
