@@ -59,8 +59,7 @@ npm start
 🌐 Endpoints principales
 ```bash
 GET /health
-```
-```bash
+
 Devuelve estado básico del servicio:
 
 json
