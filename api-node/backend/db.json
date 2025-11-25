@@ -1,19 +1,27 @@
 {
-    "projects": [
-      {
-        "id": 1,
-        "name": "Demo Project",
-        "description": "Sample project for issues"
-      }
-    ],
-    "issues": [
-      {
-        "id": 1,
-        "projectId": 1,
-        "title": "Login error on /auth",
-        "description": "User cannot login with correct credentials",
-        "status": "open",
-        "tags": ["bug", "auth"]
-      }
-    ]
-  }
+  "projects": [
+    {
+      "id": 1,
+      "name": "Demo Project",
+      "description": "Sample project for issues"
+    },
+    {
+      "id": 2,
+      "name": "Nuevo Proyecto",
+      "description": "Proyecto de prueba para la evaluación"
+    }
+  ],
+  "issues": [
+    {
+      "id": 1,
+      "projectId": 1,
+      "title": "Login error on /auth",
+      "description": "User cannot login with correct credentials",
+      "status": "open",
+      "tags": [
+        "bug",
+        "auth"
+      ]
+    }
+  ]
+}

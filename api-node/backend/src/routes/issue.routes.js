@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { classifyIssue } from '../services/classifier.service.js';
-import { readDB, writeDB } from "../db";
+import { readDB, writeDB } from "../db.js";
 
 const router = Router();
 const db = readDB();
@@ -13,7 +13,7 @@ router.get('/', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
     try {
         const { projectId, title, description } = req.body;
-        if (!projectID || !title){
+        if (!projectId || !title){
           return res
             .status(400)
             .json({ error: 'Project ID and title are required' });
