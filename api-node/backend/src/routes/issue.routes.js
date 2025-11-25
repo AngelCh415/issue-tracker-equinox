@@ -1,73 +1,116 @@
 import { Router } from 'express';
 import { classifyIssue } from '../services/classifier.service.js';
-import { readDB, writeDB } from "../db.js";
+import {all, get, run} from "../db.js"
 
 const router = Router();
-const db = readDB();
-
+const mapIssueROw = (row) => ({
+  ...row,
+  tags: row.tags ? JSON.parse(row.tags) : []
+});
 
 router.get('/', async (req, res, next) => {
-    res.json(db.issues || []);
+    try{
+      const rows = await all(
+        "SELECT id, projectId, title, description, status, tags FROM issues ORDER BY id DESC"
+      );
+      res.json(rows.map(mapIssueROw));
+    }catch (error) {
+      console.error("Error fetching issues:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
 });
 
 router.post('/', async (req, res, next) => {
     try {
         const { projectId, title, description } = req.body;
-        if (!projectId || !title){
-          return res
-            .status(400)
-            .json({ error: 'Project ID and title are required' });
+        if (!projectId || !title) {
+            return res.status(400).json({ message: 'Project ID and title are required' });
         }
-        const issues = db.issues || []; 
-        const tags = await classifyIssue(title,description || "");
-        const newIssue = {
-          id: issues.length ? issues[issues.length - 1].id + 1 : 1,
-          projectId,
-          title,
-          description: description || '',
-          status: 'open',
-          tags
-        };
-        issues.push(newIssue);
-        writeDB({ ...db, issues });
-        res.status(201).json(newIssue);
-        }catch (err) {
-        res.status(500).json({ error: 'Failed to classify issue' });
-        next(err);
+        const project = await get (
+          'SELECT id FROM projects WHERE id = ?',
+          [projectId]
+        );
+        if (!project) {
+          return res.status(400).json({ message: 'Invalid project ID: project does not exist' });
+        }
+        const tags = await classifyIssue(title, description || "");
+        const tagsJson = JSON.stringify(tags);
+
+        const result = await run (
+          `INSERT INTO issues (projectId, title, description, status, tags)
+          VALUES (?, ?, ?, 'open', ?)`,
+          [projectId, title, description || "", tagsJson]
+        );
+
+        const row = await get (
+          `SELECT id, projectId, title, description, status, tags
+          FROM issues WHERE id = ?`,
+          [result.lastID]
+        );
+        
+        res.status(201).json(mapIssueROw(row));
+    } catch (error) {
+        console.error("Error creating issue:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
   });
 
   router.put('/:id', async (req, res) => {
     const id = parseInt(req.params.id);
-    const issues = db.issues || [];
-    const issueIndex = issues.findIndex((i) => i.id === id);
-    if (issueIndex === -1) {
-      return res.status(404).json({ error: 'Issue not found' });
+    try{
+      const existing = await get(
+        'SELECT id, projectId, title, description, status, tags FROM issues WHERE id = ?',
+        [id]
+      );
+      if (!existing) {
+        return res.status(404).json({ error: 'Issue not found' });
+      }
+
+      const { title, description, status } = req.body;
+      const updatedTitle = title || existing.title;
+      const updatedDescription = description || existing.description;
+      const updatedStatus = status || existing.status;
+
+      const tags = await classifyIssue(updatedTitle, updatedDescription);
+      const tagsJson = JSON.stringify(tags);
+
+      await run(
+        `UPDATE issues SET title = ?, description = ?, status = ?, tags = ? WHERE id = ?`,
+        [updatedTitle, updatedDescription, updatedStatus, tagsJson, id]
+      );
+      
+      const updatedIssue = await get(
+        'SELECT id, projectId, title, description, status, tags FROM issues WHERE id = ?',
+        [id]
+      );
+      res.json(mapIssueROw(updatedIssue));
+    } catch (error) {
+      console.error("Error updating issue:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-    const issue = issues[issueIndex];
-    const { title, description, status } = req.body;
-    if (title !== undefined) issue.title = title;
-    if (description !== undefined) issue.description = description;
-    if (status !== undefined) issue.status = status;
-    
-    const tags = await classifyIssue(issue.title, issue.description);
-    issue.tags = tags;
-    
-    issues[issueIndex] = issue;
-    writeDB({ ...db, issues });
-    res.json(issue);
     
   });
 
-  router.delete('/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const issues = db.issues || [];
-    const issueIndex = issues.findIndex((i) => i.id === id);
-    if (issueIndex === -1) {
-      return res.status(404).json({ error: 'Issue not found' });
+  router.delete('/:id', async (req, res) => {
+    try{
+      const id = parseInt(req.params.id);
+      const existing = await get(
+        'SELECT id FROM issues WHERE id = ?',
+        [id]
+      );
+      if (!existing) {
+        return res.status(404).json({ error: 'Issue not found' });
+      }
+      
+      await run(
+        'DELETE FROM issues WHERE id = ?',
+        [id]
+      );
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting issue:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-    const [deleted] = issues.splice(issueIndex, 1);
-    writeDB({ ...db, issues });
-    res.json({ message: 'Issue deleted', issue: deleted });
   });
+   
 export default router;
