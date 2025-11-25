@@ -1,0 +1,19 @@
+{
+    "projects": [
+      {
+        "id": 1,
+        "name": "Demo Project",
+        "description": "Sample project for issues"
+      }
+    ],
+    "issues": [
+      {
+        "id": 1,
+        "projectId": 1,
+        "title": "Login error on /auth",
+        "description": "User cannot login with correct credentials",
+        "status": "open",
+        "tags": ["bug", "auth"]
+      }
+    ]
+  }
