@@ -11,16 +11,5 @@
       "description": "Proyecto de prueba para la evaluación"
     }
   ],
-  "issues": [
-    {
-      "id": 3,
-      "projectId": 1,
-      "title": "Error en el login",
-      "description": "Fallo al logearse",
-      "status": "open",
-      "tags": [
-        "security"
-      ]
-    }
-  ]
+  "issues": []
 }

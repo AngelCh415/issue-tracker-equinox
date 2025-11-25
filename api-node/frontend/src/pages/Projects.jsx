@@ -24,24 +24,31 @@ export default function Projects() {
     }, []);
 
     return (
-      <div style={{ padding: 20 }}>
-        <h2>Proyectos</h2>
+      <div>
+        <h2 className="page-title">Proyectos</h2>
   
-        {loading && <p>Cargando proyectos...</p>}
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {loading && (
+          <p className="status-message">Cargando proyectos...</p>
+        )}
+        {error && (
+          <p className="status-message error">{error}</p>
+        )}
   
         {!loading && !error && (
-          <ul>
+          <ul className="list">
             {projects.map((p) => (
-              <li key={p.id}>
-                <strong>{p.name}</strong> — {p.description}
+              <li key={p.id} className="list-item">
+                <strong>{p.name}</strong>
+                <div className="issue-meta">{p.description}</div>
               </li>
             ))}
           </ul>
         )}
   
-        <br />
-        <Link to="/issues">Ir a issues</Link>
+        <p style={{ marginTop: 16 }}>
+          <Link to="/issues">Ir a issues</Link>
+        </p>
       </div>
     );
   }
+  

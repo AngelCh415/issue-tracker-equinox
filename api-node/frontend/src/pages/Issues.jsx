@@ -92,12 +92,12 @@ export default function Issues() {
     };
     return (
       <div style={{ padding: 20 }}>
-        <h2>Issues</h2>
+        <h2 className="page-title">Issues</h2>
   
         {/* Estados globales */}
-        {loading && <p>Cargando issues...</p>}
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {successMsg && <p style={{ color: "green" }}>{successMsg}</p>}
+        {loading && <p className="status-message"> Cargando issues...</p>}
+        {error && <p className="status-message error">{error}</p>}
+        {successMsg && <p className="status-message success">{successMsg}</p>}
   
         {/* Crear issue */}
         <form onSubmit={handleCreate} style={{ marginBottom: 20 }}>
