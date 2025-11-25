@@ -22,6 +22,16 @@
         "bug",
         "auth"
       ]
+    },
+    {
+      "id": 2,
+      "projectId": 1,
+      "title": "aa",
+      "description": "desde frontend",
+      "status": "open",
+      "tags": [
+        "general"
+      ]
     }
   ]
 }
