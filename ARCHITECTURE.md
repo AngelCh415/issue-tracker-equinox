@@ -1,188 +1,225 @@
-# Arquitectura de la solución – Issue Tracker
+## Arquitectura de la Solución – Issue Tracker
 
-Este documento describe las decisiones técnicas y la arquitectura utilizada en la mini aplicación de gestión de incidencias (Issue Tracker) desarrollada para la prueba técnica.
+Este documento describe las decisiones técnicas, estructura, componentes y flujo arquitectónico de la solución Issue Tracker, desarrollada como parte de una prueba técnica full-stack.
 
----
+## 1. Visión General
 
-## 1. Visión general
+La solución está construida como un sistema modular dividido en tres componentes principales:
 
-La solución está pensada como una aplicación **full stack** compuesta por tres módulos:
+Backend principal (Node.js + Express + SQLite)
 
-1. **Backend principal (Node.js + Express)**  
-   - Expone una API REST para:
-     - Login mock.
-     - Gestión de proyectos.
-     - Gestión de issues.
-   - Integra con un servicio auxiliar en Python para clasificar issues y generar tags automáticos.
+Expone una API REST para proyectos e incidencias.
 
-2. **Servicio auxiliar de clasificación (Python + FastAPI)**  
-   - Microservicio independiente.
-   - Expone un endpoint `/classify` que recibe `title` y `description` y devuelve una lista de tags basada en reglas simples.
+Calcula tags automáticos a través de un microservicio Python.
 
-3. **Frontend (React + Vite)** *(en progreso)*  
-   - Consumirá la API del backend para:
-     - Mostrar proyectos.
-     - Listar issues.
-     - Crear/editar issues mostrando los tags sugeridos.
+Maneja validaciones, actualizaciones, persistencia y lógica del negocio.
 
----
+Servicio de clasificación (Python + FastAPI)
 
-## 2. Diagrama lógico (alto nivel)
+Microservicio independiente.
 
-```text
-[Frontend React]  -->  [Backend Node/Express]  -->  [Python Classifier]
-        |                        |
-        |                        -->  [Almacenamiento en memoria (issues, projects)]
+Recibe title y description de un issue y devuelve tags detectados mediante reglas simples.
+
+Frontend (React + Vite)
+
+Permite visualizar, crear, editar y eliminar proyectos e issues.
+
+Consume exclusivamente al backend (el frontend nunca se comunica directamente con Python).
+
+## 2. Diagrama Lógico (alto nivel)
+```bash
+[ Frontend React ]
         |
-        --> Peticiones HTTP a /api/*
+        v
+[ Backend Node.js ]
+        |
+        +--> SQLite (persistencia)
+        |
+        +--> Microservicio Python (clasificación)
 ```
-## 3. Backend principal (Node.js + Express)
+
+El backend actúa como orquestador entre persistencia, reglas de negocio y servicios externos.
+
+## 3. Backend (Node.js + Express + SQLite)
 ## 3.1 Responsabilidades
 
-Manejar un flujo de autenticación mock (login) que devuelve un usuario de prueba y un token ficticio.
+Exponer un conjunto claro de endpoints REST:
+```bash
+/api/auth/login (mock)
 
-Gestionar entidades de dominio:
+/api/projects
 
-Proyectos.
+/api/issues
+```
 
-Issues.
+Validar datos, estados y relaciones (por ejemplo, projectId debe existir).
 
-Coordinar la integración con el microservicio de clasificación antes de guardar un issue.
+Guardar proyectos e issues en SQLite (o modo :memory: en tests).
 
-Exponer endpoints REST claros y simples.
+Integrarse con el servicio de clasificación para asignar tags.
 
-## 3.2 Estructura interna
+Centralizar errores y manejar estados HTTP adecuados.
+
+## 3.2 Estructura Interna
+
+```bash
 backend/
 └── src/
-    ├── index.js          # Punto de entrada, arranca el servidor HTTP
-    ├── app.js            # Configuración de Express, middlewares y registro de rutas
-    ├── routes/           # Definición de endpoints públicos
-    │   ├── auth.routes.js
+    ├── index.js            # Inicializa servidor y base de datos
+    ├── app.js              # Configuración de Express
+    ├── db.js               # Conexión SQLite + inicialización automática
+    ├── routes/
     │   ├── projects.routes.js
     │   └── issues.routes.js
-    └── services/         # Lógica de integración externa / servicios de dominio
+    └── services/
         └── classifier.service.js
+```
 
-## 3.3 Patrones y buenas prácticas
+## 3.3 Buenas Prácticas Aplicadas
 
-Separación de responsabilidades:
+Separación clara de responsabilidades (rutas → lógica → servicios externos).
 
-Las rutas se encargan sólo de recibir la request, delegar a servicios y devolver la respuesta.
+Uso de middlewares: logging (morgan), CORS, validación y manejo central de errores.
 
-La lógica de integración con el servicio Python se concentra en classifier.service.js.
+Uso de variables de entorno para URL del clasificador y puertos.
 
-Uso de middlewares:
+Modo de pruebas (NODE_ENV=test) sin dependencias externas, usando:
 
-morgan para logging de requests.
+SQLite en memoria (:memory:)
 
-cors para permitir consumo desde el frontend.
+Clasificador local (sin llamadas HTTP)
 
-Middleware de manejo de errores para centralizar respuestas 500/4xx.
-
-Configuración:
-
-Uso de variables de entorno (vía dotenv previsto) para puertos y URLs externas.
-
-## 4. Servicio auxiliar (Python + FastAPI)
+## 4. Servicio Auxiliar (Python + FastAPI)
 ## 4.1 Responsabilidades
 
-Recibir el texto del issue (title + description).
+Recibir los textos del issue.
 
-Aplicar reglas sencillas basadas en palabras clave para asignar tags.
+Detectar palabras clave mediante reglas simples.
 
-Responder en formato JSON a las peticiones del backend.
+Regresar tags que el backend adjunta al registro final.
 
-## 4.2 Ejemplo de reglas
+## 4.2 Reglas Actuales
 
-Si el texto contiene auth, login, token → tag "security".
+Ejemplo de reglas:
 
-Si contiene ui, button, layout → tag "frontend".
+```bash
+"auth", "login", "token" → security
 
-Si contiene db, query, sql → tag "database".
+"ui", "button", "layout" → frontend
 
-Si no hay coincidencias → tag "general".
+"db", "query", "sql" → database
 
-## 4.3 Estructura
+"error", "bug", "fail" → bug
+
+Si ninguna coincide → general
+```
+
+Fácil de extender a un modelo ML en el futuro.
+
+# 4.3 Estructura
+
+```bash
 classifier/
-└── main.py    # Definición del API de FastAPI y endpoint /classify
+└── main.py
+```
 
+# 5. Comunicación entre Servicios
 
-El servicio es intencionalmente simple, pero desacoplado del backend, lo que permite evolucionarlo a un modelo de ML real sin cambiar la interfaz.
+El backend se comunica con Python vía HTTP POST:
 
-## 5. Comunicación entre servicios
-
-La comunicación entre el backend y el servicio de clasificación es vía HTTP usando JSON.
-
-Flujo al crear un issue:
-
-El cliente (Postman o frontend) envía un POST /api/issues al backend.
-
-El backend extrae title y description.
-
-El backend llama al microservicio Python:
-
+```bash
 POST http://localhost:8001/classify
+{
+  "title": "...",
+  "description": "..."
+}
+```
 
+En caso de caída del servicio Python:
 
-El servicio Python devuelve algo como:
+Modo producción: fallback local basado en reglas.
 
-{ "tags": ["security"] }
+Modo test: siempre se usa el clasificador local, NUNCA Axios.
 
+Esto permite:
 
-El backend agrega esos tags al issue creado y lo devuelve en la respuesta.
+Tests confiables.
 
-Este patrón de orquestación mantiene a Node como punto central y deja la clasificación como responsabilidad de un servicio especializado.
+Backend funcional incluso si Python no está disponible.
 
-## 6. Persistencia de datos
+Una arquitectura resiliente.
 
-En esta versión de la prueba:
+# 6. Persistencia de Datos (SQLite)
 
-La información de proyectos e issues se almacena en memoria (arrays en el backend).
+La base de datos se crea automáticamente al arrancar el backend con:
 
-El código está estructurado de tal forma que la capa de almacenamiento pueda sustituirse por:
+```bash
+initDb()
+```
 
-SQLite,
+Tablas actuales:
 
-PostgreSQL,
+projects
 
-u otra base de datos relacional.
+issues (incluye tags, status, projectId)
 
-Motivo de diseño:
+Ventajas:
 
-El foco de la prueba es mostrar:
+Fácil de extender a PostgreSQL / MySQL.
 
-Arquitectura limpia.
+No requiere infraestructura adicional.
 
-Separación de responsabilidades.
+Tests aislados gracias al modo :memory:.
 
-Integración entre servicios.
+## 7. Frontend (React + Vite)
+## 7.1 Responsabilidades
 
-La persistencia se puede extender fácilmente añadiendo una capa de models/ o repositories/ sin tocar la API pública.
+Login mock
 
-## 7. Frontend (planificado)
+Lista de proyectos
 
-Aunque el frontend está en progreso, la arquitectura está pensada para incluir:
+Lista de issues
 
-Pantalla de login mock (consume /api/auth/login).
+Crear y editar issues (incluye tags generados)
 
-Pantalla de lista de proyectos (consume /api/projects).
+Eliminar issues
 
-Pantalla de issues:
+Mostrar estados: loading, error, success
 
-Vista en tabla o columnas tipo kanban.
+## 7.2 Flujo General
 
-Formulario de creación/edición que despliega los tags sugeridos.
+```bash
+Frontend → Backend → (opt) Classifier → Backend → Base de datos
+```
 
-La comunicación se realizará vía fetch/axios hacia el backend, manteniendo al frontend completamente desacoplado del microservicio Python.
+El frontend nunca accede a SQLite ni al microservicio directamente.
 
 ## 8. Futuras mejoras
 
-Sustituir el almacenamiento en memoria por SQLite o PostgreSQL.
+Autenticación real con JWT.
 
-Añadir autenticación real con JWT y persistencia de usuarios.
+Panel kanban por proyecto.
 
-Extender el microservicio de clasificación a un modelo de ML.
+Paginación y búsqueda avanzada.
 
-Añadir tests unitarios e integración para backend y servicio Python.
+Migración del clasificador a un modelo ML.
 
-Dockerizar cada servicio y agregar docker-compose.yml para levantar todo el entorno con un solo comando.
+Docker Compose para levantar los 3 servicios simultáneamente.
+
+Monitoreo de logs en Cloud Run + Logging.
+
+Healthchecks robustos entre servicios.
+
+## ✔ Conclusión
+
+La arquitectura busca ser:
+
+Modular
+
+Escalable
+
+Fácil de probar
+
+Clara en responsabilidades
+
+Robusta ante fallos del microservicio
