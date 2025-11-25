@@ -7,7 +7,11 @@ sqlite3.verbose();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.join(__dirname, "..", "issue-tracker.db");
+const isTest = process.env.NODE_ENV === "test";
+
+const dbPath = isTest 
+  ? ":memory" 
+  : path.join(__dirname, "test_database.sqlite");
 
 export const db = new sqlite3.Database(dbPath);
 
@@ -76,11 +80,13 @@ export const initDb = async () => {
   `);
 
   // Seed mínimo de proyecto demo si no hay ninguno
-  const projects = await all("SELECT id FROM projects LIMIT 1");
-  if (projects.length === 0) {
-    await run(
-      "INSERT INTO projects (name, description) VALUES (?, ?)",
-      ["Demo Project", "Sample project for issues"]
-    );
+  if (process.env.NODE_ENV != "test") {
+    const projects = await all("SELECT id FROM projects LIMIT 1");
+    if (projects.length === 0) {
+      await run(
+       "INSERT INTO projects (name, description) VALUES (?, ?)",
+       ["Demo Project", "Sample project for issues"]
+     );  
+    }
   }
 };

@@ -1,6 +1,11 @@
 import request from 'supertest';
-import app from './app.js';
+import app from '../src/app.js';
+import { initDb } from '../src/db.js';
 
+beforeAll(async () => {
+    process.env.NODE_ENV = 'test';
+    await initDb();
+});
 describe("API /api/projects", () => {
     it("should return a list of projects", async () => {
         const response = await request(app).get("/api/projects");

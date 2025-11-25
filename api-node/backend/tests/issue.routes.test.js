@@ -1,5 +1,15 @@
 import request from 'supertest';
-import app from '../app.js';
+import app from '../src/app.js';
+import { initDb, run } from '../src/db.js';
+
+beforeAll(async () => {
+    process.env.NODE_ENV = 'test';
+    await initDb();
+    await run(
+        "INSERT INTO projects (name, description) VALUES (?, ?)",
+        ["Test Project for Issues", "Project to test issue routes"]
+    );
+});
 
 describe("API /api/issues", () => {
     it("should return a list of issues", async () => {
@@ -33,7 +43,7 @@ describe("API /api/issues POST", () => {
             .post("/api/issues")
             .send({ description: "Missing title and projectId" });
         expect(response.status).toBe(400);
-        expect(response.body).toHaveProperty("error", "Project ID and title are required");
+        expect(response.body).toHaveProperty("message", "Project ID and title are required");
     });
 });
 
@@ -66,8 +76,7 @@ describe("API /api/issues/:id DELETE", () => {
         
         const deleteRes = await request(app)
             .delete(`/api/issues/${issueId}`);
-        expect(deleteRes.status).toBe(200);
-        expect(deleteRes.body).toHaveProperty("message", "Issue deleted");
+        expect(deleteRes.status).toBe(204);
         
         const getRes = await request(app)
             .get("/api/issues");

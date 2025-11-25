@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../app.js';
+import app from '../src/app.js';
 
 describe("API /api/auth/login", () => {
     it("should authenticate user and return token", async () => {
