@@ -1,69 +1,110 @@
+## Plan de despliegue en GCP – Issue Tracker
 
----
-# Plan de despliegue en GCP – Issue Tracker
 
-Este documento describe un plan teórico de despliegue de la aplicación Issue Tracker en Google Cloud Platform (GCP), contemplando backend, microservicio de clasificación y frontend.
-
----
+Este documento describe un plan teórico de despliegue de la aplicación Issue Tracker en Google Cloud Platform (GCP), considerando backend, microservicio de clasificación y frontend.
 
 ## 1. Objetivo
 
 Desplegar la solución de forma que:
 
-- Sea **escalable** (según carga).
-- Use servicios **gestionados** de GCP.
-- Permita evolucionar la arquitectura (por ejemplo, migrar a base de datos SQL) sin cambios drásticos.
+Sea escalable (cada componente puede crecer de forma independiente).
 
----
+Aproveche servicios gestionados de GCP sin administrar servidores.
+
+Permita evolucionar el sistema sin reescribir arquitectura.
 
 ## 2. Componentes principales en GCP
+## 2.1. Cloud Run
 
-1. **Cloud Run**
-   - Backend Node.js.
-   - Microservicio Python de clasificación.
-   - (Opcional) Frontend si se sirve como app Node o Express.
+Se usaría para ejecutar contenedores de:
 
-2. **Cloud SQL (PostgreSQL / MySQL) – Fase futura**
-   - Reemplazar almacenamiento en memoria por base de datos relacional.
-   - Persistencia de usuarios, proyectos, issues.
+Backend Node.js
 
-3. **Artifact Registry**
-   - Almacenamiento de imágenes Docker para backend, classifier y eventualmente frontend.
+Microservicio de clasificación en Python
 
-4. **Cloud Build / GitHub Actions**
-   - Pipelines de CI/CD para build + test + deploy.
+Frontend (opcional si se sirve via Node o servidor estático)
 
-5. **Cloud Logging & Cloud Monitoring**
-   - Centralización de logs.
-   - Dashboards básicos de métricas (requests, errores, latencia).
+Cloud Run entrega:
 
----
+Autoscaling
 
-## 3. Despliegue del backend (Node.js + Express)
+HTTPS automático
 
-### 3.1 Empaquetado
+Despliegue sencillo desde Artifact Registry
 
-1. Crear un `Dockerfile` para el backend, por ejemplo:
+Integración nativa con IAM y Cloud Monitoring
 
-   ```dockerfile
-   FROM node:18-alpine
+## 2.2. Cloud SQL (PostgreSQL o MySQL) — Evolución futura
 
-   WORKDIR /app
+Actualmente el backend usa SQLite, pero en producción se reemplazaría por:
 
-   COPY package*.json ./
-   RUN npm install --only=production
+Cloud SQL PostgreSQL
 
-   COPY . .
+Cloud SQL MySQL
 
-   ENV PORT=8080
-   EXPOSE 8080
+Beneficios:
 
-   CMD ["node", "src/index.js"]
-2. Construir y subir la imagen a Artifact Registry:
+Conexiones seguras
 
-gcloud builds submit --tag REGION-docker.pkg.dev/PROJECT_ID/issue-tracker/backend
+Backups automáticos
 
-## 3.2 Despliegue en Cloud Run
+Fácil escalamiento
+
+## 2.3. Artifact Registry
+
+Almacena imágenes Docker:
+
+```bash
+api-node/backend
+api-node/classifier
+api-node/frontend
+```
+
+## 2.4. Cloud Build o GitHub Actions
+
+Pipeline CI/CD:
+
+Build
+
+Tests
+
+Push a Artifact Registry
+
+Deploy automático a Cloud Run
+
+## 2.5. Cloud Logging & Cloud Monitoring
+
+Para métricas esenciales:
+
+Requests/seg
+
+Latencia
+
+Errores 4xx/5xx
+
+Alertas de disponibilidad
+
+## 3. Backend (Node.js + Express + SQLite)
+## 3.1 Empaquetado en Docker
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --only=production
+
+COPY . .
+
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["node", "src/index.js"]
+
+## 3.2 Subir a Artifact Registry
+gcloud builds submit \
+  --tag REGION-docker.pkg.dev/PROJECT_ID/issue-tracker/backend
+
+## 3.3 Desplegar en Cloud Run
 gcloud run deploy issue-tracker-backend \
   --image=REGION-docker.pkg.dev/PROJECT_ID/issue-tracker/backend \
   --platform=managed \
@@ -71,20 +112,26 @@ gcloud run deploy issue-tracker-backend \
   --allow-unauthenticated \
   --set-env-vars=CLASSIFIER_URL=https://issue-tracker-classifier-<hash>-uc.a.run.app
 
+## 🔹 Consideraciones adicionales
 
-CLASSIFIER_URL se usará en el backend para llamar al microservicio Python.
+Migración de SQLite → Cloud SQL en ambiente productivo.
 
-A futuro se podrían añadir:
+Configuración de:
 
-Variables de entorno para credenciales de Cloud SQL.
+DB_HOST
 
-Configuración de CORS para el dominio del frontend.
+DB_USER
 
-## 4. Despliegue del microservicio de clasificación (Python + FastAPI)
-## 4.1 Empaquetado
+DB_PASSWORD
 
-Dockerfile de ejemplo:
+DB_NAME
 
+CORS para permitir acceso desde el frontend.
+
+## 4. Microservicio de Clasificación (Python + FastAPI)
+## 4.1 Dockerfile
+
+```bash
 FROM python:3.10-slim
 
 WORKDIR /app
@@ -96,128 +143,124 @@ ENV PORT=8080
 EXPOSE 8080
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+```
 
-## 4.2 Despliegue en Cloud Run
+## 4.2 Deploy en Cloud Run
+
+```bash
 gcloud run deploy issue-tracker-classifier \
   --image=REGION-docker.pkg.dev/PROJECT_ID/issue-tracker/classifier \
   --platform=managed \
   --region=REGION \
   --allow-unauthenticated
+  ```
 
+## 🔹 Seguridad recomendada
 
-En un entorno más restringido, se podría limitar el acceso a este servicio para que sólo el backend pueda consumirlo (mediante IAM o VPC).
+Limitar acceso para que solo Cloud Run del backend pueda llamar al microservicio.
+
+Usar IAM o VPC Serverless Connector.
+
+## 🔹 Resiliencia
+
+Si el clasificador falla, el backend ya implementa un fallback local de reglas.
+Esto permite resiliencia incluso sin disponibilidad total del microservicio.
 
 ## 5. Frontend (React + Vite)
 
-Hay dos alternativas principales:
+Dos opciones de despliegue:
 
-Cloud Run
+Opción A — Cloud Run
 
-Servir el frontend con un servidor Node/Express o un servidor estático simple.
+Construir artefacto (npm run build)
 
-Integración sencilla si se desea tener una sola URL.
+Servir con Node o un servidor estático
 
-Cloud Storage + Cloud CDN
+Beneficio:
+Una sola URL, sencillo de conectar a API Gateway o Cloud Run.
 
-Compilar el proyecto (npm run build).
+Opción B — Cloud Storage + Cloud CDN (recomendado)
 
-Subir los archivos estáticos (dist/) a un bucket público.
+Build del proyecto
 
-Colocar Cloud CDN delante para mejor rendimiento.
+Subida de dist/ a un bucket estático
 
-Para una primera versión, Cloud Storage + Cloud CDN suele ser suficiente y económico.
+Activar Cloud CDN para mejor latencia
 
-## 6. Base de datos (evolución futura)
+Es más económico y eficiente para frontends SPA.
 
-Aunque la prueba actual utiliza almacenamiento en memoria, el siguiente paso natural sería:
+## 6. Base de Datos (Presente y Futuro)
+Presente
 
-Crear una instancia de Cloud SQL (PostgreSQL).
+El backend usa SQLite, que se crea automáticamente con initDb().
 
-Definir una capa de acceso a datos en el backend (models/repositories).
+Futuro en GCP
 
-Configurar el backend con variables de entorno:
+Usar Cloud SQL PostgreSQL:
 
-DB_HOST
+pg o Prisma como ORM
 
-DB_USER
+Conexiones privadas mediante Cloud SQL Proxy
 
-DB_PASSWORD
+Variables de entorno seguras mediante Secret Manager
 
-DB_NAME
+## 7. CI/CD en GCP
+## 7.1 Repositorio con estructura:
+```bash
+api-node/backend
+api-node/classifier
+api-node/frontend
+```
 
-Conectando vía:
+## 7.2 Pipeline recomendado
+Opción A — Cloud Build Triggers
 
-pg (driver puro) o
+Cada push a main:
 
-un ORM como Prisma / Sequelize / TypeORM.
+Build de backend → push a Artifact Registry
 
-## 7. CI/CD
-## 7.1 Fuente
+Build de classifier → push a Artifact Registry
 
-Repositorio en GitHub con:
+Build frontend → bucket de Cloud Storage
 
-/backend
+Tests automáticos
 
-/classifier
+Deploy a Cloud Run
 
-/frontend
+Opción B — GitHub Actions
 
-## 7.2 Pipeline
+Usar gcloud CLI dentro de workflows.
 
-Opciones:
+## 8. Observabilidad
 
-Cloud Build triggers conectados a GitHub.
+Cloud Logging → registros de backend y classifier
 
-O GitHub Actions que usen gcloud para desplegar.
+Cloud Monitoring:
 
-Flujo sugerido:
+latencia promedio
 
-git push a rama main o una rama específica.
+requests/seg
 
-Build de imágenes Docker para backend y classifier.
+errores
 
-Ejecución de tests (cuando existan).
+Alertas:
 
-Deploy a Cloud Run de:
+error rate > 5%
 
-issue-tracker-backend
+latencia > 500ms
 
-issue-tracker-classifier
-
-issue-tracker-frontend (si aplica).
-
-## 8. Monitoreo y observabilidad
-
-Cloud Run se integra automáticamente con Cloud Logging:
-
-Logs de requests.
-
-Logs de errores.
-
-Se recomienda:
-
-Crear dashboards en Cloud Monitoring para:
-
-Latencia promedio.
-
-Cantidad de requests.
-
-Errores 4xx / 5xx.
-
-Configurar alertas básicas (por ejemplo, si el error rate supera cierto umbral).
+healthcheck inactivo
 
 ## 9. Resumen
 
-La solución está diseñada para:
+La arquitectura está diseñada para ser:
 
-Ser modular (backend y classifier se escalan de forma independiente).
+Modular: backend y classifier se escalan individualmente.
 
-Ser portable (todo se empaqueta como contenedores).
+Portable: cada componente es un contenedor.
 
-Permitir una evolución natural:
+Resiliente: fallback del clasificador asegura disponibilidad.
 
-De reglas simples a modelos de clasificación más complejos.
+Escalable: Cloud Run + Cloud SQL.
 
-De almacenamiento en memoria a Cloud SQL.
-
-De un entorno de prueba local a un entorno gestionado en GCP con CI/CD.
+Evolutiva: se puede migrar de reglas simples a ML sin alterar contratos API.
