@@ -130,8 +130,9 @@ export default function Issues() {
         {/* Crear issue */}
         <form onSubmit={handleCreate} className="form" style={{ marginBottom: 20 }}>
           <div className="form-group">
-            <label className="label">Proyecto</label>
+            <label className="label" htmlFor="proyectSelect">Proyecto</label>
             <select
+              id="proyectSelect"
               className="select"
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}

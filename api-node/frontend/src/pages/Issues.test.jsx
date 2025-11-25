@@ -30,6 +30,14 @@ test('faling to render issues list', async () => {
 test("renders issues list", async () => {
     // Simulate data
     api.get.mockResolvedValueOnce({
+        data: [{
+            id: 1,
+            name: "Demo Project",
+            description: "A demo project for testing",
+        }
+        ],
+    });
+    api.get.mockResolvedValueOnce({
         data: [
         {
             id: 1,
@@ -58,6 +66,12 @@ test("renders issues list", async () => {
 
 test("creates a new issue", async () => {
     // Initial fetch
+    api.get
+    .mockResolvedValueOnce({
+      data: [
+        { id: 1, name: "Project A", description: "Test project" },
+      ],
+    })
     api.get.mockResolvedValueOnce({ data: [] });
     render(
         <MemoryRouter>
@@ -66,11 +80,16 @@ test("creates a new issue", async () => {
     );
     
     // Simulate creating an issue
+    await waitFor(() => {
+        expect(screen.getByRole("combobox")).toBeInTheDocument();
+        expect(screen.getByText("Project A")).toBeInTheDocument();
+    });
     api.post.mockResolvedValueOnce({});
     api.get.mockResolvedValueOnce({
         data: [
         {
             id: 2,
+            proyectId: 1,
             title: "New Issue",
             description: "New issue description",
             status: "open",
@@ -79,16 +98,19 @@ test("creates a new issue", async () => {
         ],
     });
     
-    // Fill form and submit
-    const titleInput = screen.getByPlaceholderText("Título");
-    const descInput = screen.getByPlaceholderText("Descripción");
-   
+ 
+    const projectSelect = screen.getByRole("combobox");
+    fireEvent.change(projectSelect, { target: { value: "1" } });
+  
+    const titleInput = screen.getByPlaceholderText(/Título/i);
+    const descInput = screen.getByPlaceholderText(/Descripción/i);
+
     fireEvent.change(titleInput, { target: { value: "New Issue" } });
     fireEvent.change(descInput, { target: { value: "New issue description" } });
-    
-    const createButton = screen.getByRole("button", { name: /Crear issue/i });
+
+    const createButton = screen.getByRole("button", { name: /Crear Issue/i });
     fireEvent.click(createButton);
-    
+    screen.debug();
     await waitFor(() => {
         expect(screen.getByText("New Issue")).toBeInTheDocument();
     });
@@ -97,51 +119,62 @@ test("creates a new issue", async () => {
 
 test("updates an issue", async () => {
     // Initial fetch
+    api.get
+    .mockResolvedValueOnce({
+        data: [
+            { id: 1, name: "Project A", description: "Test project" },
+        ],
+    })
     api.get.mockResolvedValueOnce({
         data: [
         {
-            id: 3,
-            title: "Old Issue",
-            description: "Old description",
+            id: 1,
+            proyectId: 1,
+            title: "Issue One",
+            description: "First issue description",
             status: "open",
+            tags: ["bug"],
         },
         ],
     });
     render(
         <MemoryRouter>
-            <Issues />
+          <Issues />
         </MemoryRouter>
     );
     
+    // Simulate editing an issue
     await waitFor(() => {
-        expect(screen.getByText("Old Issue")).toBeInTheDocument();
+        expect(screen.getByText(/Issue One/i)).toBeInTheDocument();
     });
     
-    // Simulate updating an issue
+    const editButton = screen.getByRole("button", { name: /Editar/i });
+    fireEvent.click(editButton);
+    await waitFor(() => {
+        expect(screen.getByText(/Editando issue #1/i)).toBeInTheDocument();
+    });
+    
+    const titleInput = screen.getByDisplayValue("Issue One");
+    const descInput = screen.getByDisplayValue("First issue description");
+    fireEvent.change(titleInput, { target: { value: "Updated Issue" } });
+    fireEvent.change(descInput, { target: { value: "Updated description" } });
+    
     api.put.mockResolvedValueOnce({});
     api.get.mockResolvedValueOnce({
         data: [
         {
-            id: 3,
+            id: 1,
+            proyectId: 1,
             title: "Updated Issue",
             description: "Updated description",
             status: "open",
+            tags: ["bug"],
         },
         ],
     });
     
-    // Click edit, change values and submit
-    const editButton = screen.getByRole("button", { name: /Editar/i });
-    fireEvent.click(editButton);
-    
-    const titleInput = screen.getByDisplayValue("Old Issue");
-    const descInput = screen.getByDisplayValue("Old description");
-    
-    fireEvent.change(titleInput, { target: { value: "Updated Issue" } });
-    fireEvent.change(descInput, { target: { value: "Updated description" } });
-    
-    const saveButton = screen.getByRole("button", { name: /Guardar cambios/i });
-    fireEvent.click(saveButton);
+    const updateButton = screen.getByRole("button", { name: /Guardar cambios/i });
+    fireEvent.click(updateButton);
     
     await waitFor(() => {
         expect(screen.getByText("Updated Issue")).toBeInTheDocument();
