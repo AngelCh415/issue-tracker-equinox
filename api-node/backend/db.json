@@ -2,14 +2,90 @@
   "projects": [
     {
       "id": 1,
-      "name": "Demo Project",
-      "description": "Sample project for issues"
+      "name": "Test Project",
+      "description": "A project for testing"
     },
     {
       "id": 2,
-      "name": "Nuevo Proyecto",
-      "description": "Proyecto de prueba para la evaluación"
+      "name": "Test Project",
+      "description": "Project created from test"
+    },
+    {
+      "id": 3,
+      "name": "Another Test Project",
+      "description": "From list test"
     }
   ],
-  "issues": []
+  "issues": [
+    {
+      "id": 1,
+      "projectId": 1,
+      "title": "Issue to be deleted",
+      "description": "This issue will be deleted.",
+      "status": "open",
+      "tags": [
+        "general"
+      ]
+    },
+    {
+      "id": 2,
+      "projectId": 1,
+      "title": "Test Issue",
+      "description": "This is a test issue.",
+      "status": "open",
+      "tags": [
+        "general"
+      ]
+    },
+    {
+      "id": 3,
+      "projectId": 1,
+      "title": "Updated Test Issue",
+      "description": "This is a test issue.",
+      "status": "closed",
+      "tags": [
+        "general"
+      ]
+    },
+    {
+      "id": 4,
+      "projectId": 1,
+      "title": "Test Issue",
+      "description": "This is a test issue.",
+      "status": "open",
+      "tags": [
+        "general"
+      ]
+    },
+    {
+      "id": 5,
+      "projectId": 1,
+      "title": "Updated Test Issue",
+      "description": "This is a test issue.",
+      "status": "closed",
+      "tags": [
+        "general"
+      ]
+    },
+    {
+      "id": 6,
+      "projectId": 1,
+      "title": "Test Issue",
+      "description": "This is a test issue.",
+      "status": "open",
+      "tags": [
+        "general"
+      ]
+    },
+    {
+      "id": 7,
+      "projectId": 1,
+      "title": "Updated Test Issue",
+      "description": "This is a test issue.",
+      "status": "closed",
+      "tags": [
+        "general"
+      ]
+    }
+  ]
 }
