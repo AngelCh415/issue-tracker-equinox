@@ -18,6 +18,8 @@ def classify(issue: Issue):
         tags.append("frontend")
     if any(word in text for word in ["base de datos", "sql", "query"]):
         tags.append("database")
+    if any(word in text for word in ["error", "fail", "bug"]):
+        tags.append("bug")
     if not tags:
         tags.append("general")
     return {"tags": tags}
