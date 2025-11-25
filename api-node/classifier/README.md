@@ -1,86 +1,120 @@
-# Servicio de Clasificación de Issues (Classifier)
+## Issue Classifier – Microservicio en Python (FastAPI)
 
-Este servicio está desarrollado en **Python + FastAPI** y se encarga de generar etiquetas (tags) automáticas para los issues, a partir del título y la descripción.
+Microservicio responsable de clasificar issues y generar tags automáticos basados en reglas simples.
+Este servicio es consumido por el backend (Node.js) vía HTTP para enriquecer cada issue creada o actualizada.
 
-Se expone como un microservicio independiente que el backend (Node.js) consume vía HTTP.
+## 🧩 Stack Tecnológico
 
----
+Python 3.10+
 
-## 🧩 Stack
+FastAPI (API REST)
 
-- Python 3.10+
-- FastAPI
-- Uvicorn
-- Pydantic
+Uvicorn (servidor ASGI)
 
----
+Pydantic (modelos de request/response)
 
-## 📁 Estructura
 
+## 📁 Estructura del proyecto
 ```bash
+
 classifier/
 ├── main.py          # Definición del API y endpoint /classify
 └── README.md
 ```
 
-## 🚀 Puesta en marcha
-
-Crear y activar entorno virtual (opcional pero recomendado):
-
+## 🚀 Instalación y ejecución
+1️⃣ Crear entorno virtual (opcional pero recomendado)
 ```bash
 cd classifier
 python -m venv .venv
-source .venv/bin/activate   # En macOS / Linux
-# .venv\Scripts\activate    # En Windows
+source .venv/bin/activate      # macOS / Linux
+# .venv\Scripts\activate       # Windows
 ```
 
-Instalar dependencias:
-
+## 2️⃣ Instalar dependencias
 ```bash
 pip install fastapi uvicorn pydantic
 ```
 
-Levantar el servicio:
-
+## 3️⃣ Levantar el servidor
 ```bash
 uvicorn main:app --reload --port 8001
 ```
 
-El servicio quedará escuchando en:
 
+El microservicio quedará disponible en:
 ```bash
 http://localhost:8001
 ```
 
-🔌 Endpoint disponible
+## 🔌 Endpoint disponible
 ```bash
 POST /classify
+```
 
-Request body (JSON):
-
+Genera tags automáticos basados en el texto del issue.
+```bash
+Request
 {
   "title": "Error en el login",
   "description": "El usuario no puede iniciar sesión con credenciales correctas"
 }
 
-
-Response (JSON):
-
+Response
 {
   "tags": ["security"]
 }
 ```
+## 🧠 Lógica de clasificación
 
-🧠 Lógica de clasificación (reglas básicas)
+El sistema funciona con reglas simples:
 
-Las tags se generan en base a palabras clave simples:
+Palabras clave detectadas	Tag asignado
 
-Si el texto contiene auth, login, token → "security".
+```bash
+"auth", "login", "token"	security
+"ui", "button", "layout", "frontend"	frontend
+"db", "query", "sql", "database"	database
+"error", "fail", "bug"	bug
+Ninguna coincidencia	general
+```
 
-Si el texto contiene ui, button, layout → "frontend".
+Esta arquitectura permite escalar fácilmente a un modelo de ML en el futuro sin cambiar la interfaz del servicio.
 
-Si el texto contiene db, query, sql → "database".
+## 🛡 Fallback en el backend (Node.js)
 
-Si no hay coincidencias → "general".
+El backend está diseñado para:
 
-Estas reglas pueden escalarse en el futuro a un modelo de ML sin cambiar la interfaz del servicio.
+Consultar este microservicio cuando está disponible.
+
+Usar reglas locales cuando:
+
+El microservicio está apagado
+
+Hay errores de red
+
+El entorno es NODE_ENV=test
+
+Esto garantiza que el proyecto funcione incluso si el clasificador externo falla.
+
+## 🧪 Testing
+
+El microservicio puede probarse con:
+```bash
+curl -X POST http://localhost:8001/classify \
+ -H "Content-Type: application/json" \
+ -d '{"title":"login error","description":"fails with token"}'
+
+
+Salida esperada:
+
+{ "tags": ["security", "bug"] }
+```
+
+## 📌 Notas finales
+
+El servicio es independiente y se puede desplegar en Cloud Run, Docker o como contenedor local.
+
+Es liviano, rápido y perfecto para integrarse con pipelines futuros.
+
+La interfaz es estable, por lo que cambiar el motor de clasificación no rompe el backend ni el frontend.
