@@ -3,6 +3,8 @@ import apiClient from "../services/apiClient";
 
 export default function Issues() {
     const [issues, setIssues] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const [selectedProjectId, setSelectedProjectId] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
@@ -26,18 +28,42 @@ export default function Issues() {
         setLoading(false);
       }
     };
-    
+ 
+    const loadProjects = async () => {
+      try{
+        const res = await apiClient.get("/projects");
+        setProjects(res.data);  
+        if (res.data.length && !selectedProjectId) {
+          setSelectedProjectId(res.data[0].id);
+        }
+      } catch (err) {
+        setError("Error loading projects");
+        console.error(err);
+      }
+    };
     useEffect(() => {
+        loadProjects();
         loadIssues();
     }, []);
-
+    const getProjectName = (projectId) => {
+      const project = projects.find((p) => p.id === projectId);
+      return project ? project.name : "Unknown Project";
+    };
     // Create issue handler
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
             setError(null);
             setSuccessMsg("");
-            await apiClient.post("/issues", { projectId: 1, title, description });
+            if (!selectedProjectId) {
+              setError("Please select a project");
+              return;
+            }
+            await apiClient.post("/issues", {
+                projectId: Number(selectedProjectId),
+                title,
+                description,
+            });
             setTitle("");
             setDescription("");
             setSuccessMsg("Issue created successfully");
@@ -91,27 +117,57 @@ export default function Issues() {
       }
     };
     return (
-      <div style={{ padding: 20 }}>
+      <div>
         <h2 className="page-title">Issues</h2>
   
         {/* Estados globales */}
-        {loading && <p className="status-message"> Cargando issues...</p>}
+        {loading && <p className="status-message">Cargando issues...</p>}
         {error && <p className="status-message error">{error}</p>}
-        {successMsg && <p className="status-message success">{successMsg}</p>}
+        {successMsg && (
+          <p className="status-message success">{successMsg}</p>
+        )}
   
         {/* Crear issue */}
-        <form onSubmit={handleCreate} style={{ marginBottom: 20 }}>
-          <input
-            placeholder="Título"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          /><br /><br />
-          <input
-            placeholder="Descripción"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          /><br /><br />
-          <button type="submit">Crear issue</button>
+        <form onSubmit={handleCreate} className="form" style={{ marginBottom: 20 }}>
+          <div className="form-group">
+            <label className="label">Proyecto</label>
+            <select
+              className="select"
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+            >
+              <option value="">Selecciona un proyecto</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+  
+          <div className="form-group">
+            <label className="label">Título</label>
+            <input
+              className="input"
+              placeholder="Título"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+  
+          <div className="form-group">
+            <label className="label">Descripción</label>
+            <input
+              className="input"
+              placeholder="Descripción"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+  
+          <button type="submit" className="button-primary">
+            Crear issue
+          </button>
         </form>
   
         <hr />
@@ -119,47 +175,66 @@ export default function Issues() {
         {/* Formulario de edición */}
         {editingIssue && (
           <div style={{ marginBottom: 30 }}>
-            <h3>Editando issue #{editingIssue.id}</h3>
+            <h3 className="section-title">
+              Editando issue #{editingIssue.id}
+            </h3>
   
-            <form onSubmit={handleUpdate}>
-              <input
-                value={editingIssue.title}
-                onChange={(e) =>
-                  setEditingIssue({ ...editingIssue, title: e.target.value })
-                }
-                placeholder="Título"
-              />
-              <br /><br />
+            <form onSubmit={handleUpdate} className="form">
+              <div className="form-group">
+                <label className="label">Título</label>
+                <input
+                  className="input"
+                  value={editingIssue.title}
+                  onChange={(e) =>
+                    setEditingIssue({
+                      ...editingIssue,
+                      title: e.target.value,
+                    })
+                  }
+                  placeholder="Título"
+                />
+              </div>
   
-              <input
-                value={editingIssue.description}
-                onChange={(e) =>
-                  setEditingIssue({
-                    ...editingIssue,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Descripción"
-              />
-              <br /><br />
+              <div className="form-group">
+                <label className="label">Descripción</label>
+                <input
+                  className="input"
+                  value={editingIssue.description}
+                  onChange={(e) =>
+                    setEditingIssue({
+                      ...editingIssue,
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder="Descripción"
+                />
+              </div>
   
-              <select
-                value={editingIssue.status}
-                onChange={(e) =>
-                  setEditingIssue({ ...editingIssue, status: e.target.value })
-                }
-              >
-                <option value="open">Abierto</option>
-                <option value="in_progress">En progreso</option>
-                <option value="resolved">Resuelto</option>
-              </select>
+              <div className="form-group">
+                <label className="label">Estado</label>
+                <select
+                  className="select"
+                  value={editingIssue.status}
+                  onChange={(e) =>
+                    setEditingIssue({
+                      ...editingIssue,
+                      status: e.target.value,
+                    })
+                  }
+                >
+                  <option value="open">Abierto</option>
+                  <option value="in_progress">En progreso</option>
+                  <option value="resolved">Resuelto</option>
+                </select>
+              </div>
   
-              <br /><br />
-              <button type="submit">Guardar cambios</button>
+              <button type="submit" className="button-primary">
+                Guardar cambios
+              </button>
               <button
                 type="button"
+                className="button-secondary"
                 onClick={() => setEditingIssue(null)}
-                style={{ marginLeft: 10 }}
               >
                 Cancelar
               </button>
@@ -167,26 +242,36 @@ export default function Issues() {
           </div>
         )}
   
-        <h3>Listado</h3>
+        <h3 className="section-title">Listado</h3>
   
         {!loading && !error && (
-          <ul>
+          <ul className="list">
             {issues.map((i) => (
-              <li key={i.id}>
+              <li key={i.id} className="list-item">
                 <strong>{i.title}</strong> — {i.status}
-                <br />
-                {i.description}
-                <br />
-                Tags: {i.tags?.join(", ")}
-                <br />
-                <button onClick={() => setEditingIssue(i)}>Editar</button>
-                <button
-                  onClick={() => handleDelete(i.id)}
-                  style={{ marginLeft: 10 }}
-                >
-                  Eliminar
-                </button>
-                <br /><br />
+                <div className="issue-meta">
+                  Proyecto: {getProjectName(i.projectId)}
+                </div>
+                <div className="issue-meta">{i.description}</div>
+                <div className="issue-meta">
+                  Tags: {i.tags?.join(", ") || "–"}
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="button-primary"
+                    onClick={() => setEditingIssue(i)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => handleDelete(i.id)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
