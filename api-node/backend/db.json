@@ -86,6 +86,16 @@
       "tags": [
         "general"
       ]
+    },
+    {
+      "id": 8,
+      "projectId": 1,
+      "title": "Error en el boton ",
+      "description": "Error en button de actualizar",
+      "status": "open",
+      "tags": [
+        "frontend"
+      ]
     }
   ]
 }

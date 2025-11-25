@@ -37,7 +37,7 @@ router.post('/', async (req, res, next) => {
     }
   });
 
-  router.put('/:id', (req, res) => {
+  router.put('/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     const issues = db.issues || [];
     const issueIndex = issues.findIndex((i) => i.id === id);
@@ -49,6 +49,10 @@ router.post('/', async (req, res, next) => {
     if (title !== undefined) issue.title = title;
     if (description !== undefined) issue.description = description;
     if (status !== undefined) issue.status = status;
+    
+    const tags = await classifyIssue(issue.title, issue.description);
+    issue.tags = tags;
+    
     issues[issueIndex] = issue;
     writeDB({ ...db, issues });
     res.json(issue);
