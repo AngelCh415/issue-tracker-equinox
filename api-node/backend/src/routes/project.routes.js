@@ -1,12 +1,12 @@
 import { Router } from "express";
+import { readDB, writeDB } from "../db";
 
 const router = Router();
-const projects = [
-    { id: 1, name: "Project Alpha", description: "First project" },
-];
+
 
 router.get("/", (req, res) => {
-    res.json(projects);
+    const db = readDB();
+    res.json(db.projects);
 });
 
 router.post('/', (req, res) => {
@@ -16,14 +16,16 @@ router.post('/', (req, res) => {
       return res.status(400).json({ message: 'Project name is required' });
     }
   
+    const db = readDB();
+    const projects = db.projects || [];
     const newProject = {
-      id: projects.length + 1,
+      id: projects.length ? projects[projects.length - 1].id + 1 : 1,
       name,
       description: description || ''
-    };
-  
+    }
     projects.push(newProject);
-  
+
+    writeDB({ ...db, projects });
     res.status(201).json(newProject);
   });
 

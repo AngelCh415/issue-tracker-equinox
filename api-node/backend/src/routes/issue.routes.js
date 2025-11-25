@@ -1,34 +1,37 @@
 import { Router } from 'express';
 import { classifyIssue } from '../services/classifier.service.js';
+import { readDB, writeDB } from "../db";
 
 const router = Router();
+const db = readDB();
 
-let issues = [
-    { id: 1, title: 'Issue One', description: 'First issue', status: 'open', projectId: 1 },
-    ];
 
 router.get('/', async (req, res, next) => {
-    res.json(issues);
+    res.json(db.issues || []);
 });
 
 router.post('/', async (req, res, next) => {
     try {
-      const { projectId, title, description } = req.body;
-      const tags = await classifyIssue(title, description);
-  
-      const newIssue = {
-        id: issues.length + 1,
-        projectId,
-        title,
-        description,
-        status: "open",
-        tags
-      };
-  
-      issues.push(newIssue);
-      res.status(201).json(newIssue);
-  
-    } catch (err) {
+        const { projectId, title, description } = req.body;
+        if (!projectID || !title){
+          return res
+            .status(400)
+            .json({ error: 'Project ID and title are required' });
+        }
+        const issues = db.issues || []; 
+        const tags = await classifyIssue(title,description || "");
+        const newIssue = {
+          id: issues.length ? issues[issues.length - 1].id + 1 : 1,
+          projectId,
+          title,
+          description: description || '',
+          status: 'open',
+          tags
+        };
+        issues.push(newIssue);
+        writeDB({ ...db, issues });
+        res.status(201).json(newIssue);
+        }catch (err) {
         res.status(500).json({ error: 'Failed to classify issue' });
         next(err);
     }
@@ -36,25 +39,31 @@ router.post('/', async (req, res, next) => {
 
   router.put('/:id', (req, res) => {
     const id = parseInt(req.params.id);
-    const issue = issues.find(i => i.id === id);
-    if (!issue) {
+    const issues = db.issues || [];
+    const issueIndex = issues.findIndex((i) => i.id === id);
+    if (issueIndex === -1) {
       return res.status(404).json({ error: 'Issue not found' });
     }
-    const { title, description, status, tags } = req.body;
-    if (title) issue.title = title;
-    if (description) issue.description = description;
-    if (status) issue.status = status;
-    if (tags) issue.tags = tags;
+    const issue = issues[issueIndex];
+    const { title, description, status } = req.body;
+    if (title !== undefined) issue.title = title;
+    if (description !== undefined) issue.description = description;
+    if (status !== undefined) issue.status = status;
+    issues[issueIndex] = issue;
+    writeDB({ ...db, issues });
     res.json(issue);
+    
   });
 
   router.delete('/:id', (req, res) => {
     const id = parseInt(req.params.id);
-    const index = issues.findIndex(i => i.id === id);
-    if (index === -1) {
+    const issues = db.issues || [];
+    const issueIndex = issues.findIndex((i) => i.id === id);
+    if (issueIndex === -1) {
       return res.status(404).json({ error: 'Issue not found' });
     }
-    const deleted = issues.splice(index, 1);
-    res.json({message: "Issue deleted", issue: deleted[0]});
+    const [deleted] = issues.splice(issueIndex, 1);
+    writeDB({ ...db, issues });
+    res.json({ message: 'Issue deleted', issue: deleted });
   });
 export default router;
