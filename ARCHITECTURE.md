@@ -204,8 +204,6 @@ Paginación y búsqueda avanzada.
 
 Migración del clasificador a un modelo ML.
 
-Docker Compose para levantar los 3 servicios simultáneamente.
-
 Monitoreo de logs en Cloud Run + Logging.
 
 Healthchecks robustos entre servicios.

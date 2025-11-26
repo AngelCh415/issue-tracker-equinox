@@ -66,6 +66,18 @@ La base de datos SQLite se crea automáticamente al ejecutar el backend (`initDb
 └── README.md
 
 ```
+## 🐳 Ejecución con Docker Compose
+
+El proyecto incluye un `docker-compose.yml` en la raíz para levantar:
+
+- Backend (Node + Express + SQLite)
+- Microservicio classifier (Python + FastAPI)
+- Frontend (React + Vite)
+
+```bash
+docker compose up --build
+```
+
 
 ## 🚀 Cómo ejecutar
 ```bash
