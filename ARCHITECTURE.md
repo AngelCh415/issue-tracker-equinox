@@ -208,6 +208,23 @@ Monitoreo de logs en Cloud Run + Logging.
 
 Healthchecks robustos entre servicios.
 
+## 9. Orquestación local con Docker Compose
+
+La arquitectura del proyecto permite ejecutar todos los servicios de forma unificada utilizando Docker Compose.
+Esto facilita el levantamiento del entorno completo sin dependencias locales (Node, Python, SQLite, Vite, etc.).
+
+## 9.1 Servicios incluidos
+
+El archivo docker-compose.yml define tres contenedores principales:
+``` bash
+Servicio	Descripción
+backend	API Node.js + Express + SQLite. Se enlaza automáticamente al classifier.
+classifier	Microservicio Python (FastAPI) encargado de generar las tags de los issues.
+frontend	Aplicación React servida por Vite. Se conecta al backend vía HTTP.
+```
+
+Los tres servicios comparten una red interna para comunicarse sin exponer puertos adicionales.
+
 ## ✔ Conclusión
 
 La arquitectura busca ser:
